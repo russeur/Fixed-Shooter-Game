@@ -123,6 +123,14 @@ int main() {
 	load_stage(current_stage, &path_manager);
 	
 	
+	char smoothness_buffer[128] = "";
+	
+	
+	
+	std::cout<<smoothness_buffer<<"\n";
+	
+	char speed_buffer[128] = "";
+	
 	
 	while(!window->window_should_close()){
 		
@@ -130,25 +138,79 @@ int main() {
 		ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+		ImGui::Begin("Stage Editor");
+		if (ImGui::Button("Load From Save")){
+			path_manager.update_selected_spawner(-1);
+			load_stage(current_stage, &path_manager);
+		}
+		
+		if (ImGui::Button("Save Changes")){
+			save_stage(current_stage, (Path**)path_manager.paths.data(), path_manager.paths.size(), path_manager.bug_spawners.data(), path_manager.bug_spawners.size());
+		}
+		
+		if (ImGui::Button("<-")){
+			current_stage--;
+			path_manager.update_selected_spawner(-1);
+			load_stage(current_stage, &path_manager);
+			stage_label.update_number(current_stage);
+		}
+		if (ImGui::Button("->")){
+			
+			current_stage++;
+			path_manager.update_selected_spawner(-1);
+			load_stage(current_stage, &path_manager);
+			stage_label.update_number(current_stage);
+			
+		}
+		
+		ImGui::End();
 		
 		
+		bool path_editor_hovered = false;
+		if (path_manager.get_selected_spawner() != -1 && !started_path){
+			ImGui::Begin("Path Editor");
+			
+			if (ImGui::Button("Delete Path")){
+				
+				path_manager.destroy_spawner(path_manager.get_selected_spawner());
+				
+			}
+			
+			ImGui::Text("Enter smoothness");
+			ImGui::SameLine();
+			if (ImGui::InputText("Smoothness", smoothness_buffer, IM_ARRAYSIZE(smoothness_buffer), ImGuiInputTextFlags_EnterReturnsTrue)){
+				
+				std::string new_smooth_str = smoothness_buffer;
+				
+				path_manager.paths[path_manager.bug_spawners[path_manager.get_selected_spawner()]->target_path]->smoothness = std::stof(new_smooth_str);
+				
+				path_manager.paths[path_manager.bug_spawners[path_manager.get_selected_spawner()]->target_path]->update_curve();
+				
+			}
+			
+			
+			path_editor_hovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+			
+			ImGui::End();
+			
+			
+			
+			
+			
+		}
 		
-		//std::cout<<"is_colliding"<<ship.get_child<Collider>("SCollider")->is_colliding_with(bug.get_child<Collider>("BCollider"))<<"\n";
+		
 		
 		
 		if (!clicking_left && window->get_mouse_button_state(GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS){
-			//root.add_bug<Bug>(Position2D{window->cursor_x, window->cursor_y}, "bug1");
-			//root.add_bug<Bug>(path_manager.paths[0].path_points[0], "bug1");
-			//bug1 = root.get_child<Node2D>("Bug_Container")->get_child<Bug>("bug1");
-			//std::cout<<"made bug\n";
-			//std::cout<<"dist = "<<path_manager.paths[0].distance_from(Position2D{window->cursor_x, window->cursor_y})<<"\n";
+			
 			clicking_left=true;
-			//started_path = true;
+			
 			
 		}
 		if (clicking_left && window->get_mouse_button_state(GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE){
 			
-			if (!started_path){
+			if (!started_path && !path_editor_hovered){
 				
 				if (window->get_key_button_state(GLFW_KEY_P) == GLFW_PRESS){ // create new path
 					
@@ -166,11 +228,16 @@ int main() {
 					
 					//root.bug_container->add_spawner(0, 10, 60, Position2D{0, 0});
 				}else{
+					
+					
 					path_manager.select_new_spawner(Position2D{((float)window->cursor_x - window->width/2) / path_manager.zoom + window->width/2, ((float)window->cursor_y - window->height/2) / path_manager.zoom  + window->height/2});	
 					if (path_manager.get_selected_spawner() >= 0){
 						std::cout<<"enemy_count: "<<path_manager.bug_spawners[path_manager.get_selected_spawner()]->max_enemy_count<<"\n";
 						std::cout<<"spawn frequency: "<<path_manager.bug_spawners[path_manager.get_selected_spawner()]->spawn_interval<<"\n";
 						std::cout<<"bug type: "<<static_cast<int>(path_manager.bug_spawners[path_manager.get_selected_spawner()]->bug_type)<<"\n";
+						
+						std::string smoothness_str = std::to_string(path_manager.paths[path_manager.bug_spawners[path_manager.get_selected_spawner()]->target_path]->smoothness);
+						strcpy(smoothness_buffer, smoothness_str.c_str());
 					}
 
 					
@@ -225,7 +292,7 @@ int main() {
 			root.reset_game();
 		}
 		
-		
+		/*
 		
 		if(!started_path && !pressing_9 && window->get_key_button_state(GLFW_KEY_9) == GLFW_PRESS){
 			std::cout<<"load\n";
@@ -260,6 +327,7 @@ int main() {
 		if (!started_path && !pressing_enter && window->get_key_button_state(GLFW_KEY_ENTER) == GLFW_PRESS){
 			pressing_enter = true;
 		}
+		*/
 		if (!started_path && pressing_enter && window->get_key_button_state(GLFW_KEY_ENTER) == GLFW_RELEASE){
 			pressing_enter = false;
 			if (window->get_key_button_state(GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS){
@@ -292,7 +360,7 @@ int main() {
 			
 			
 		}
-		
+		/*
 		if (window->get_key_button_state(GLFW_KEY_LEFT) == GLFW_PRESS && !pressing_left){
 			pressing_left=true;
 		}
@@ -327,6 +395,7 @@ int main() {
 				
 			}
 		}
+		*/
 		
 		// if they are simulating a stage
 		if (started_path){
